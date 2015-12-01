@@ -1,0 +1,16 @@
+---
+# web.yml
+
+- hosts: web-hosts
+  sudo: no
+  roles:
+    - role: common
+      tags:
+        - ntp
+        - sudo
+        - usr
+        - fw
+        - helper
+    - role: web-host
+      tags:
+        - web

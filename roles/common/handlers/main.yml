@@ -1,0 +1,10 @@
+---
+# file: roles/common/handlers/main.yml
+- name: restart ntpd
+  service: name=ntpd state=restarted
+
+- name: restart fail2ban
+  service: name=fail2ban state=restarted
+
+- name: restart firewalld
+  service: name=firewalld state=restarted

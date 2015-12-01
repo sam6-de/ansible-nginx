@@ -1,0 +1,95 @@
+---
+
+- name: Create the EPEL Repository.
+  template: src=epel.repo.j2 dest=/etc/yum.repos.d/epel.repo
+  tags: repo
+
+- name: Create the GPG key for EPEL
+  copy: src=RPM-GPG-KEY-EPEL-7 dest=/etc/pki/rpm-gpg
+  tags: repo
+
+- name: upgrade all packages
+  yum: name=* state=latest
+  tags: initial
+
+- name: be sure ntp is installed
+  yum: name=ntp state=installed
+  tags: ntp
+
+- name: be sure ntp is configured
+  template: src=ntp.conf.j2 dest=/etc/ntp.conf
+  notify:
+    - restart ntpd
+  tags: ntp
+
+- name: be sure ntpd is running and enabled
+  service: name=ntpd state=running enabled=yes
+  tags: ntp
+
+- name: be sure sudo is installed
+  yum: name=sudo state=installed
+  tags: sudo
+
+- name: add ansible default user
+  user: name=ansible comment="Ansible System User" uid=5000
+  tags: usr
+
+- name: install firewalld package
+  yum: name=firewalld state=installed
+  tags: fw
+
+- name: be sure firewalld is started and enabled
+  service: name=firewalld state=started enabled=true
+  tags: fw
+
+- name: install fail2ban and all plugins
+  yum: name=fail2ban-all state=installed
+  yum: name=fail2ban-firewalld state=installed
+  tags: fw
+
+- name: be sure fail2ban is configured
+  template: src=fail2ban.conf.j2 dest=/etc/fail2ban/fail2ban.conf
+  template: src=jail.conf.j2 dest=/etc/fail2ban/jail.conf
+  notify:
+    - restart fail2ban
+  tags: fw
+
+- name: be sure fail2ban is running and enabled
+  service: name=fail2ban state=running enabled=yes
+  tags: fw
+
+- name: allow ssh traffic
+  firewalld:
+    service: "{{ item.service }}"
+    permanent: "{{ item.permanent }}"
+    state: "{{ item.state }}"
+  with_items:
+    - { service: ssh, permanent: true, state: enabled }
+    - { service: dhcpv6-client, permanent: true, state: disabled }
+  notify:
+    - restart firewalld
+  tags: fw
+
+- name: install htop package
+  yum: name=htop state=installed
+  tags: helper
+
+- name: install nload package
+  yum: name=nload state=installed
+  tags: helper
+
+- name: install curl package
+  yum: name=curl state=installed
+  tags: helper
+
+- name: install wget package
+  yum: name=wget state=installed
+  tags: helper
+
+- name: install net-tools package
+  yum: name=net-tools state=installed
+  tags: helper
+
+- name: install nano package
+  yum: name=nano state=installed
+  tags: helper

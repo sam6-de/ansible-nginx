@@ -1,0 +1,4 @@
+# file: production
+
+[web-hosts]
+your-production-server ansible_connection=ssh ansible_ssh_user=root

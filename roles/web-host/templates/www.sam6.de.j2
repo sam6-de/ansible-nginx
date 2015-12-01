@@ -1,0 +1,80 @@
+# Rewrite {{ server_short }}:80 to {{ server_long }}:443
+server {
+    listen 80;
+    server_name {{ server_short }};
+
+    add_header Strict-Transport-Security max-age=15768000;
+    add_header X-Frame-Options DENY;
+    add_header X-Content-Type-Options nosniff;
+
+    rewrite ^ https://{{ server_long }}$request_uri? permanent;
+}
+
+# Rewrite {{ server_long }}:80 to {{ server_long }}:443
+server {
+    listen 80;
+    server_name {{ server_long }};
+
+    add_header Strict-Transport-Security max-age=15768000;
+    add_header X-Frame-Options DENY;
+    add_header X-Content-Type-Options nosniff;
+
+    rewrite ^ https://{{ server_long }}$request_uri? permanent;
+}
+
+# Rewrite {{ server_short }}:443 to {{ server_long }}:443
+server {
+    listen 443 ssl http2;
+    server_name {{ server_short }};
+
+    add_header Strict-Transport-Security max-age=15768000;
+    add_header X-Frame-Options DENY;
+    add_header X-Content-Type-Options nosniff;
+
+    rewrite ^ https://{{ server_long }}$request_uri? permanent;
+
+    ssl on;
+
+    ssl_session_timeout 5m;
+    ssl_session_cache shared:SSL:10m;
+    ssl_session_tickets off;
+
+    ssl_stapling on;
+    ssl_stapling_verify on;
+
+    ssl_certificate /etc/nginx/ssl/{{ server_long }}.chained.crt;
+    ssl_certificate_key /etc/nginx/ssl/{{ server_long }}.key;
+
+    ssl_protocols TLSv1.2 TLSv1.1 TLSv1;
+    ssl_ciphers 'ECDHE-RSA-AES256-SHA:ECDHE-RSA-AES128-SHA:AES256-SHA:AES128-SHA:!aNULL:!eNULL:!EXPORT:!CAMELLIA:!DES:!MD5:!PSK:!RC4';
+    ssl_prefer_server_ciphers on;
+}
+
+# HTTPS server
+server {
+    listen 443 ssl http2;
+    server_name {{ server_long }} {{ server_test }};
+
+    add_header Strict-Transport-Security max-age=15768000;
+    add_header X-Frame-Options DENY;
+    add_header X-Content-Type-Options nosniff;
+
+    root /var/www/{{ server_long }};
+    index index.html;
+
+    ssl on;
+
+    ssl_session_timeout 5m;
+    ssl_session_cache shared:SSL:10m;
+    ssl_session_tickets off;
+
+    ssl_stapling on;
+    ssl_stapling_verify on;
+
+    ssl_certificate /etc/nginx/ssl/{{ server_long }}.crt;
+    ssl_certificate_key /etc/nginx/ssl/{{ server_long }}.key;
+
+    ssl_protocols TLSv1.2 TLSv1.1 TLSv1;
+    ssl_ciphers 'ECDHE-RSA-AES256-SHA:ECDHE-RSA-AES128-SHA:AES256-SHA:AES128-SHA:!aNULL:!eNULL:!EXPORT:!CAMELLIA:!DES:!MD5:!PSK:!RC4';
+    ssl_prefer_server_ciphers on;
+}

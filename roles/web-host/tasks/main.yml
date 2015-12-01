@@ -1,0 +1,61 @@
+---
+
+- name: Create the NGINX Repository.
+  template: src=nginx.repo.j2 dest=/etc/yum.repos.d/nginx.repo
+  tags: repo
+
+- name: install nginx package
+  yum: name=nginx state=installed
+  tags: web
+
+- name: be sure nginx is running and enabled
+  service: name=nginx state=running enabled=yes
+  tags: web
+
+- name: allow http/https traffic
+  firewalld:
+    service: "{{ item.service }}"
+    permanent: "{{ item.permanent }}"
+    state: "{{ item.state }}"
+  with_items:
+    - { service: http, permanent: true, state: enabled }
+    - { service: https, permanent: true, state: enabled }
+  notify:
+    - restart firewalld
+  tags: web
+
+- name: create web folder for sam6.de
+  file: path=/var/www/ state=directory
+  notify:
+    - restart nginx
+  tags: web
+
+- name: create web folder for sam6.de
+  file: path=/var/www/www.sam6.de/ state=directory owner=nginx group=nginx
+  notify:
+    - restart nginx
+  tags: web
+
+- name: create web folder for sam6.de
+  file: path=/etc/nginx/ssl/ state=directory owner=nginx group=nginx
+  notify:
+    - restart nginx
+  tags: web
+
+- name: create the ssl chained crt
+  copy: src={{ server_long }}.chained.crt dest=/etc/nginx/ssl/{{ server_long }}.chained.crt
+  tags: web
+
+- name: create the ssl key
+  copy: src={{ server_long }}.key dest=/etc/nginx/ssl/{{ server_long }}.key
+  tags: web
+
+- name: be sure nginx sam6.de is configured
+  template: src=www.sam6.de.j2 dest=/etc/nginx/conf.d/www.sam6.de.conf
+  notify:
+    - restart nginx
+  tags: web
+
+- name: create initial home page for www.sam6.de
+  copy: src=index.html dest=/var/www/www.sam6.de/index.html owner=nginx group=nginx
+  tags: web
